@@ -1,4 +1,4 @@
-
+import torch
 def ship_data_to_cuda(imgs,targets, device):
     f = lambda imgs,targets: ship_data_to_cuda_singe_sample(
         imgs, targets, device=device)
@@ -13,6 +13,10 @@ def ship_data_to_cuda_singe_sample(img, target, device):
         if 'heatmaps' in target:
             target['heatmaps'] = target['heatmaps'].to(device)
     return img, target
+
+def resume_from_checkpoint(pth):
+    checkpoint=torch.load(pth)
+
 
 def draw_box_in_image(img, box, gt=True, l_w=2):
     import matplotlib.pyplot as plt

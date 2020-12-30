@@ -117,13 +117,13 @@ def detection_performance_calc(dataset, gallery_det, det_thresh=0.5, iou_thresh=
     if logger ==None:
         print('{} detection:'.format('labeled only' if labeled_only else
                                      'all'))
-        print('  recall = {:.2%}'.format(det_rate))
+        print('  det_rate = {:.2%}'.format(det_rate))
         if not labeled_only:
             print('  ap = {:.2%}'.format(ap))
     else:
         logger.info('{} detection:'.format('labeled only' if labeled_only else
                                      'all'))
-        logger.info('  recall = {:.2%}'.format(det_rate))
+        logger.info('  det_rate = {:.2%}'.format(det_rate))
         if not labeled_only:
             logger.info('  ap = {:.2%}'.format(ap))
     return precision, recall,det_rate,ap

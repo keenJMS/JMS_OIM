@@ -135,6 +135,9 @@ _C.SOLVER.WARMUP_ITERS = 500
 # method of warm up, option: 'constant','linear'
 _C.SOLVER.WARMUP_METHOD = "linear"
 
+_C.SOLVER.WARMUP_GAMMA = 0.1
+_C.SOLVER.WARMUP_DECAY_STEP = 8
+
 # epoch number of saving checkpoints
 _C.SOLVER.CHECKPOINT_PERIOD = 50
 # iteration of display training log
@@ -166,3 +169,5 @@ _C.TEST.FEAT_NORM = 'yes'
 # ---------------------------------------------------------------------------- #
 # Path to checkpoint and saved log of trained model
 _C.OUTPUT_DIR = ""
+_C.RESUME = ''
+_C.APEX= ''

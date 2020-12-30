@@ -47,7 +47,7 @@ if __name__=='__main__':
     cfg.freeze()
 
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '2,3'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     cudnn_benchmark= True
-    test_benchmark('/root/proj/JMS_OIM/outputs/Dec 14 05:14:45 2020/ep0.pth',cfg)
+    test_benchmark('/root/proj/JMS_OIM/de_outputs/Dec 23 03:27:50 2020/ep0.pth',cfg)
 

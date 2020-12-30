@@ -28,7 +28,7 @@ class FasterRCNN_OIM(GeneralizedRCNN):
                  # Box parameters
                  rcnn_bbox_bn=True,
                  box_roi_pool=None, box_head=None, box_predictor=None,
-                 box_score_thresh=0.5, box_nms_thresh=0.4, box_detections_per_img=300,
+                 box_score_thresh=0.05, box_nms_thresh=0.4, box_detections_per_img=300,
                  box_fg_iou_thresh=0.5, box_bg_iou_thresh=0.1,
                  box_batch_size_per_image=128, box_positive_fraction=0.5,
                  bbox_reg_weights=None,
@@ -54,7 +54,7 @@ class FasterRCNN_OIM(GeneralizedRCNN):
         if box_roi_pool is None:
             box_roi_pool = MultiScaleRoIAlign(
                 featmap_names=['feat2rpn'],
-                output_size=14,
+                output_size=[14,14],
                 sampling_ratio=2)
         if box_head is None:
             resolution = box_roi_pool.output_size[0]
@@ -197,6 +197,8 @@ class REID_HEAD(nn.Module):
         # self.sm= nn.Softmax()
     def forward(self,x):
         x=F.relu(self.fc1(x))
+        if len (x.shape)==1:
+            x=x.unsqueeze(0)
         norms = x.norm(2, 1, keepdim=True)
         x = x / norms.expand_as(x).clamp(min=1e-12)
         return x

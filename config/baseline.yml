@@ -1,13 +1,13 @@
 MODEL:
   PRETRAIN_CHOICE: 'imagenet'
   BACKBONE: 'resnet50'
-  METHOD: 'FasterRCNN_OIM'
+  METHOD: 'DE_FasterRCNN_OIM'
   PRETRAIN_PATH: '/root/.torch/models/resnet50-19c8e357.pth'
 
 
 
 INPUT:
-  MIN_MAX_SIZE: [900,1500]
+  MIN_MAX_SIZE: [900,1500]  #900,1500 default
   PROB: 0.5 # random horizontal flip
 
 
@@ -20,9 +20,9 @@ DATALOADER:
   NUM_WORKERS: 8
 
 SOLVER:
-  OPTIMIZER_NAME: 'SGD'
+  OPTIMIZER_NAME: 'SGD'  #Adam,SGD
   MAX_EPOCHS: 40
-  BASE_LR: 0.001
+  BASE_LR: 0.0003
 
   BIAS_LR_FACTOR: 1
   WEIGHT_DECAY: 0.0005
@@ -31,11 +31,13 @@ SOLVER:
 
   STEP_SIZE: 8
   STEPS: [40, 70]
-  GAMMA: 0.1
+  GAMMA: 0.5
 
   WARMUP_FACTOR: 0.01
-  WARMUP_ITERS: 0
-  WARMUP_METHOD: 'linear'
+  WARMUP_ITERS: 5
+  WARMUP_METHOD: 'step' #constant
+  WARMUP_GAMMA: 0.2
+  WARMUP_DECAY_STEP: 5
 
   CHECKPOINT_PERIOD: 1
   LOG_PERIOD: 20
@@ -50,5 +52,7 @@ TEST:
   IMS_PER_BATCH: 128
 
 
-OUTPUT_DIR: "/root/proj/JMS_OIM/outputs"
+OUTPUT_DIR: "/root/proj/JMS_OIM/de_outputs"
+RESUME: ''
+APEX: ''
 

@@ -103,7 +103,9 @@ class CUHK_SYSU(PersonSearchDataset):
         all_imgs = all_imgs['Img'].squeeze()
         all_imgs = [str(a[0][0]) for a in all_imgs]
         # training
-        return list(set(all_imgs) - set(test))
+        train_set=list(set(all_imgs) - set(test))
+        train_set.sort()
+        return train_set
 
     def _adapt_pid_to_cls(self, label_pids, upid=5555):
         """

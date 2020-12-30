@@ -12,13 +12,20 @@ def get_optimizer(cfg, model):
             else:
                 params += [{'params': [value], 'lr':lr,
                             'weight_decay': cfg.SOLVER.WEIGHT_DECAY}]
+    if cfg.SOLVER.OPTIMIZER_NAME != 'SGD':
+        optimizer = torch.optim.__dict__[cfg.SOLVER.OPTIMIZER_NAME](params)
+    else:
+        optimizer = torch.optim.SGD(params,momentum=cfg.SOLVER.MOMENTUM)
 
-    optimizer = torch.optim.SGD(params, momentum=cfg.SOLVER.MOMENTUM)
     return optimizer
 
 
 def get_lr_scheduler(cfg, optimizer):
-    if cfg.SOLVER.LR_DECAY_MILESTONES is not None:
+    if cfg.SOLVER.WARMUP_ITERS>0:
+        scheduler= warmup_lr_scheduler(optimizer,cfg)
+        print("using warmup")
+        return scheduler
+    elif cfg.SOLVER.LR_DECAY_MILESTONES is not None:
         scheduler = torch.optim.lr_scheduler.MultiStepLR(
             optimizer, milestones=cfg.SOLVER.LR_DECAY_MILESTONES,
             gamma=cfg.SOLVER.GAMMA)
@@ -30,12 +37,18 @@ def get_lr_scheduler(cfg, optimizer):
     return scheduler
 
 
-def warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor):
+def warmup_lr_scheduler(optimizer, cfg):
 
     def f(x):
-        if x >= warmup_iters:
-            return 1
-        alpha = float(x) / warmup_iters
-        return warmup_factor * (1 - alpha) + alpha
+        if x >= cfg.SOLVER.WARMUP_ITERS:
+            if cfg.SOLVER.WARMUP_METHOD=='constant':
+                return 1
+            elif cfg.SOLVER.WARMUP_METHOD=='step':
+                return cfg.SOLVER.WARMUP_GAMMA**(int((x-cfg.SOLVER.WARMUP_ITERS)/cfg.SOLVER.WARMUP_DECAY_STEP))
+            else:
+                raise RuntimeError("wrong WARMUP_METHOD")
+        alpha = float(x) / cfg.SOLVER.WARMUP_ITERS
+
+        return cfg.SOLVER.WARMUP_FACTOR * (1 - alpha) + alpha
 
     return torch.optim.lr_scheduler.LambdaLR(optimizer, f)

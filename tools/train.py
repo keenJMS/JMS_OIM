@@ -23,25 +23,70 @@ from tools.test_oim import test_benchmark
 from tools.solver import get_optimizer,get_lr_scheduler
 from torch.nn import DataParallel
 from torch.utils.tensorboard import SummaryWriter
-def main(cfg,logger):
+from apex import  amp
+from shutil import copy
+def main(cfg,config_file=None):
     #model
 
     model = build_model.build(cfg)
-    cudnn_benchmark = True
+    cudnn_benchmark = False
     torch.cuda.manual_seed(1)
 
+    dataloader = get_data_loader(cfg, mode='train')
+    if cfg.RESUME:
+        print('resume from:',cfg.RESUME)
+        checkpoint=torch.load(cfg.RESUME)
+        model.load_state_dict(checkpoint['model'])
+        opt = get_optimizer(cfg, model)
+        opt = opt.load_state_dict(checkpoint['optimizer'])
+        scheduler = get_lr_scheduler(cfg, opt)
+        scheduler = scheduler.load_state_dict(checkpoint['lr_scheduler'])
+        start_epoch= checkpoint['epoch']+1
+        iter_count=checkpoint['iter_count']
+        logger_dir=checkpoint['logger_dir']
+    else:
+        print('start from beginning')
+        opt = get_optimizer(cfg, model)
+        scheduler = get_lr_scheduler(cfg, opt)
+
+        start_epoch=0
+        iter_count=0
+        logger_dir = osp.join(cfg.OUTPUT_DIR, time.asctime()[4:])
+
+    #logger
+
+    if not osp.exists(logger_dir):
+        os.mkdir(logger_dir)
+    if config_file is not None:
+        copy(config_file,logger_dir)
+    logger= setup_logger("person search",logger_dir,'log.txt'.format(time.asctime()[4:]),0)
+    logger.info(cfg)
 
     model = model.cuda()
 
-    opt= get_optimizer(cfg,model)
+    def inplace_relu(m):
+        classname = m.__class__.__name__
+        if classname.find('ReLU') != -1:
+            m.inplace = True
 
-    scheduler = get_lr_scheduler(cfg,opt)
-    dataloader=get_data_loader(cfg,mode='train')
+    model.apply(inplace_relu)
+
+    if cfg.APEX !='':
+        logger.info("current use apex")
+        APEX=True
+        # model.roi_heads.box_roi_pool.forward = \
+        #     amp.half_function(model.roi_heads.box_roi_pool.forward)
+        model,opt=amp.initialize(model, opt, opt_level="O2")
+        # if cfg.MODEL.BACKBONE == 'DE_FasterRCNN_OIM':
+        #     model.roi_heads.de_box_roi_pool.forward= \
+        #         amp.half_function(model.roi_heads.de_box_roi_pool.forward)
+    else:
+        APEX = False
     iter_time=int(dataloader.dataset.__len__()/dataloader.batch_size)
     writer = SummaryWriter(logger_dir)
     color=[Color('G'),Color('M'),Color('R'),Color('Y'),Color('B')]
-    iter_count=0
-    for epoch in range(cfg.SOLVER.MAX_EPOCHS):
+
+    for epoch in range(start_epoch,cfg.SOLVER.MAX_EPOCHS):
         loss_dict = 0
 
         for i,(img,target) in enumerate(dataloader):
@@ -71,7 +116,11 @@ def main(cfg,logger):
             else:
                 loss_dict += losses
             opt.zero_grad()
-            losses.backward()
+            if APEX:
+                with amp.scale_loss(losses, opt) as scaled_loss:
+                    scaled_loss.backward()
+            else:
+                losses.backward()
             opt.step()
             iter_count +=1
 
@@ -82,7 +131,9 @@ def main(cfg,logger):
                 'epoch': epoch,
                 'model': model.state_dict(),
                 'optimizer': opt.state_dict(),
-                'lr_scheduler': scheduler.state_dict()
+                'lr_scheduler': scheduler.state_dict(),
+                'iter_count':iter_count,
+                'logger_dir':logger_dir
             }, save_path)
         det_rate,det_ap,map,rank1=test_benchmark(save_path,cfg,logger)
         writer.add_scalar('det_rate',det_rate,epoch)
@@ -102,12 +153,8 @@ if __name__=='__main__':
     cfg.merge_from_list(args.opts)
     cfg.freeze()
 
-    #logger
-    logger_dir=osp.join(cfg.OUTPUT_DIR,time.asctime()[4:])
-    if not osp.exists(logger_dir):
-        os.mkdir(logger_dir)
-    logger= setup_logger("person search",logger_dir,'log.txt'.format(time.asctime()[4:]),0)
-    logger.info(cfg)
-    os.environ['CUDA_VISIBLE_DEVICES'] = '3'
-    cudnn_benchmark= True
-    main(cfg,logger)
+
+    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    torch.cuda.set_device(0)
+    cudnn_benchmark= False
+    main(cfg,args.config_file)

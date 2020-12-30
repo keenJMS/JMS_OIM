@@ -13,7 +13,7 @@ def build(cfg):
     model = ps.__dict__[cfg.MODEL.METHOD](backbone,
                                            num_classes=2, num_pids=5532, num_cq_size=5000,
                                            # transform parameters
-                                           min_size=900, max_size=1500,
+                                           min_size=cfg.INPUT.MIN_MAX_SIZE[0], max_size=cfg.INPUT.MIN_MAX_SIZE[1],
                                            image_mean=None, image_std=None,
                                            # Anchor settings:
                                            anchor_scales=None, anchor_ratios=None,

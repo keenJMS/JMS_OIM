@@ -49,9 +49,9 @@ class Compose(object):
         for t in self.transforms:
             img,target= t(img,target)
         return img,target
-def get_transform(train, p=0.5):
+def get_transform(mode, p=0.5):
     transforms = []
     transforms.append(ToTensor())  # converts [0, 255] to [0, 1]
-    if train:
+    if mode=='train':
         transforms.append(RandomHorizontalFlip(p))
     return Compose(transforms)
